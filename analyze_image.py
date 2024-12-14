@@ -127,24 +127,33 @@ def analyze_image(image_path):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        image_file = request.files.get('image')
-        medical_text = request.form.get('text')
+        image_analysis = None
+        text_analysis = None
+        image_url = None
 
+        # Handle uploaded image
+        image_file = request.files.get('image')
         if image_file:
             image_path = os.path.join("uploads", image_file.filename)
             image_file.save(image_path)
-            analysis = analyze_image(image_path)
-        else:
-            analysis = {"error": "No image provided."}
+            try:
+                image_analysis = analyze_image(image_path)
+                image_url = f"/uploads/{image_file.filename}"
+            except Exception as e:
+                image_analysis = {"error": str(e)}
 
+        # Handle entered text
+        medical_text = request.form.get('text')
         if medical_text:
-            text_analysis = analyze_text(medical_text)
-        else:
-            text_analysis = {"error": "No text provided."}
+            try:
+                text_analysis = analyze_text(medical_text)
+            except Exception as e:
+                text_analysis = {"error": str(e)}
 
-        save_results_to_db(image_path if image_file else "synthetic", analysis, text_analysis)
+        # Store results in database
+        save_results_to_db(image_path if image_file else "synthetic", image_analysis, text_analysis)
 
-        return jsonify({"image_analysis": analysis, "text_analysis": text_analysis})
+        return jsonify({"image_analysis": image_analysis, "text_analysis": text_analysis, "image_url": image_url})
 
     return render_template('index.html')
 

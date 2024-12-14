@@ -1,51 +1,69 @@
+// Updated App.js
 import React, { useEffect, useState } from 'react';
-import './i18n';
+import './styles.css';
 import { useTranslation } from 'react-i18next';
+import { Bar } from 'react-chartjs-2';
+import './i18n';
 
 const App = () => {
   const { t, i18n } = useTranslation();
 
-  // State to store results dynamically
   const [results, setResults] = useState({ imageAnalysis: null, textAnalysis: null });
 
-  // Function to change language
   const changeLanguage = (lang) => {
     i18n.changeLanguage(lang);
   };
 
   useEffect(() => {
-    const form = document.querySelector("form");
+    const form = document.querySelector('form');
     const imageInput = document.querySelector("input[type='file']");
-    const textInput = document.querySelector("textarea");
+    const textInput = document.querySelector('textarea');
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener('submit', (event) => {
       event.preventDefault();
 
       const formData = new FormData();
       if (imageInput.files.length > 0) {
-        formData.append("image", imageInput.files[0]);
+        formData.append('image', imageInput.files[0]);
       }
       if (textInput.value.trim()) {
-        formData.append("text", textInput.value);
+        formData.append('text', textInput.value);
       }
 
-      fetch("/", {
-        method: "POST",
+      fetch('/', {
+        method: 'POST',
         body: formData,
       })
         .then((response) => response.json())
         .then((data) => {
-          // Update results state with fetched data
           setResults({
             imageAnalysis: data.image_analysis,
             textAnalysis: data.text_analysis,
           });
         })
         .catch((error) => {
-          console.error("Error:", error);
+          console.error('Error:', error);
         });
     });
   }, []);
+
+  const renderGraph = (data) => {
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+
+    const chartData = {
+      labels,
+      datasets: [
+        {
+          label: 'Probability',
+          data: values,
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        },
+      ],
+    };
+
+    return <Bar data={chartData} />;
+  };
 
   return (
     <div className="app">
@@ -57,37 +75,42 @@ const App = () => {
         </nav>
       </header>
 
-      <main>
+      <main className="container">
         <form>
-          <label>{t('uploadImage')}:
+          <div className="form-group">
+            <label>{t('uploadImage')}:</label>
             <input type="file" accept="image/*" />
-          </label>
-          <br />
-          <label>{t('enterText')}:
+          </div>
+
+          <div className="form-group">
+            <label>{t('enterText')}:</label>
             <textarea placeholder={t('typeHere')} rows="4"></textarea>
-          </label>
-          <br />
-          <button type="submit">{t('submit')}</button>
+          </div>
+
+          <button className="submit-btn" type="submit">
+            {t('submit')}
+          </button>
         </form>
 
-        <div className="results">
-          {/* Display image analysis results dynamically */}
+        <div id="results">
           {results.imageAnalysis && (
             <div className="result-item">
               <h2>{t('imageAnalysis')}</h2>
+              {results.imageAnalysis.Result && renderGraph(results.imageAnalysis)}
               <p>{results.imageAnalysis.Result || results.imageAnalysis.error}</p>
               {results.imageAnalysis.image_url && (
-                <img src={results.imageAnalysis.image_url} alt="Processed Image" />
+                <img src={results.imageAnalysis.image_url} alt="Processed" />
               )}
             </div>
           )}
 
-          {/* Display text analysis results dynamically */}
           {results.textAnalysis && (
             <div className="result-item">
               <h2>{t('textAnalysis')}</h2>
               {Object.entries(results.textAnalysis).map(([key, value]) => (
-                <p key={key}><strong>{key}:</strong> {value}</p>
+                <p key={key}>
+                  <strong>{key}:</strong> {value}
+                </p>
               ))}
             </div>
           )}
