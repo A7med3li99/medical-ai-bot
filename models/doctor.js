@@ -2,12 +2,13 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 const doctorSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    name: { type: String, required: true, minlength: 3, maxlength: 50 },
+    email: { type: String, required: true, unique: true, match: /.+@.+\..+/ },
     password: { type: String, required: true },
     speciality: { type: String, required: true },
+    role: { type: String, enum: ['doctor', 'admin'], default: 'doctor' },
     createdAt: { type: Date, default: Date.now },
-    role: { type: String, enum: ['doctor', 'admin'], default: 'doctor' } // Role for permissions
+    updatedAt: { type: Date, default: Date.now },
 });
 
 // Hash the password before saving

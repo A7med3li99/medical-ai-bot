@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 
+// إعداد التخزين
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -10,8 +11,9 @@ const storage = multer.diskStorage({
     }
 });
 
+// التحقق من نوع الملفات
 const fileFilter = (req, file, cb) => {
-    const allowedExtensions = ['.png', '.jpg', '.jpeg', '.dcm']; // Added support for DICOM files
+    const allowedExtensions = ['.png', '.jpg', '.jpeg', '.dcm']; // دعم DICOM
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowedExtensions.includes(ext)) {
         cb(null, true);
@@ -20,10 +22,10 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-const upload = multer({ 
-    storage, 
-    fileFilter, 
-    limits: { fileSize: 10 * 1024 * 1024 } // Limit file size to 10MB
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // حجم الملف الأقصى 10 ميجا
 });
 
 module.exports = upload;

@@ -1,5 +1,10 @@
 {
-    "welcome": "Welcome to Medical AI Platform",
-    "login": "Login"
-  }
-  
+  "welcome": "Welcome to Medical AI Platform",
+  "login": "Login",
+  "upload-image": "Upload Medical Image:",
+  "enter-text": "Enter Medical Text:",
+  "analyze": "Analyze",
+  "results": "Results",
+  "processing": "Processing...",
+  "error": "An error occurred. Please try again."
+}

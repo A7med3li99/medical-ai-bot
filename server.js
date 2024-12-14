@@ -1,58 +1,66 @@
-require('dotenv').config();
 const express = require('express');
 const { PythonShell } = require('python-shell');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const path = require('path');
+const fileUpload = require('express-fileupload');
 
 const app = express();
-
-// إعداد الخادم لقبول JSON
 app.use(express.json());
+app.use(fileUpload());
 
-// أمان إضافي
-app.use(cors());
-app.use(helmet());
+// Endpoint لتحليل النصوص والصور معًا
+app.post('/analyze', async (req, res) => {
+    const { text } = req.body;
+    const image = req.files?.image;
 
-// معدل الطلبات
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 دقيقة
-    max: 100, // 100 طلب لكل IP
-    message: 'Too many requests from this IP, please try again after 15 minutes.'
-});
-app.use(limiter);
-
-// مسار رئيسي افتراضي
-app.get('/', (req, res) => {
-    res.send('Server is running! Welcome to Medical AI Bot.');
-});
-
-// مسار الذكاء الاصطناعي: سؤال طبيب وإجابة
-app.post('/ask-ai', (req, res) => {
-    const { question } = req.body;
-
-    if (!question) {
-        return res.status(400).json({ error: 'Question is required' });
+    if (!text && !image) {
+        return res.status(400).json({ error: "Text or image is required." });
     }
 
-    const options = {
-        args: [question]
-    };
+    const textPromise = text
+        ? new Promise((resolve, reject) => {
+              PythonShell.run('analyze_text.py', { args: [text] }, (err, results) => {
+                  if (err) return reject(err.message);
+                  resolve(JSON.parse(results[0]));
+              });
+          })
+        : Promise.resolve(null);
 
-    // تشغيل سكربت Python لتحليل السؤال
-    PythonShell.run('ask_ai.py', options, (err, results) => {
-        if (err) {
-            console.error('Error processing AI request:', err);
-            return res.status(500).json({ error: 'Failed to process request' });
+    const imagePromise = image
+        ? new Promise((resolve, reject) => {
+              const imagePath = `uploads/${Date.now()}-${image.name}`;
+              image.mv(imagePath, (err) => {
+                  if (err) return reject(err.message);
+                  PythonShell.run('medical_ai_api.py', { args: [imagePath] }, (err, results) => {
+                      if (err) return reject(err.message);
+                      resolve(JSON.parse(results[0]));
+                  });
+              });
+          })
+        : Promise.resolve(null);
+
+    try {
+        const [textAnalysis, imageAnalysis] = await Promise.all([textPromise, imagePromise]);
+        const relationships = analyzeRelationships(textAnalysis, imageAnalysis);
+        res.json({ textAnalysis, imageAnalysis, relationships });
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+function analyzeRelationships(textAnalysis, imageAnalysis) {
+    if (!textAnalysis || !imageAnalysis) return null;
+
+    const matches = [];
+    textAnalysis.keywords.forEach((keyword) => {
+        if (imageAnalysis.diagnosis.includes(keyword)) {
+            matches.push(`Keyword "${keyword}" matches with image diagnosis.`);
         }
-
-        res.status(200).json({ answer: results[0] });
     });
-});
 
-// تشغيل الخادم
-const PORT = process.env.PORT || 4001;
-app.listen(PORT, () => {
-    console.log(`Server is running securely on port ${PORT}`);
-});
+    return {
+        matches,
+        matchedCount: matches.length
+    };
+}
+
+const PORT = 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

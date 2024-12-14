@@ -1,53 +1,57 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.querySelector("form");
-    const imageInput = document.querySelector("input[type='file']");
-    const textInput = document.querySelector("textarea");
-    const resultsContainer = document.getElementById("results");
+    const form = document.querySelector("#analysis-form");
+    const spinner = document.querySelector("#spinner");
+    const resultsContainer = document.querySelector("#results .result-container");
 
     form.addEventListener("submit", (event) => {
         event.preventDefault();
-
-        const formData = new FormData();
-        if (imageInput.files.length > 0) {
-            formData.append("image", imageInput.files[0]);
-        }
-        if (textInput.value.trim()) {
-            formData.append("text", textInput.value);
-        }
-
-        fetch("/", {
+    
+        spinner.classList.remove("hidden");
+        resultsContainer.innerHTML = "";
+    
+        const formData = new FormData(form);
+    
+        fetch("/analyze-image", {
             method: "POST",
             body: formData,
         })
-            .then((response) => response.json())
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                return response.json();
+            })
             .then((data) => {
+                spinner.classList.add("hidden");
                 displayResults(data);
             })
             .catch((error) => {
-                console.error("Error:", error);
+                spinner.classList.add("hidden");
+                resultsContainer.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
             });
     });
-
+    
     function displayResults(data) {
-        resultsContainer.innerHTML = ""; // Clear previous results
-
         if (data.image_analysis) {
             const imageResult = document.createElement("div");
-            imageResult.className = "result-item";
-            imageResult.innerHTML = `<h2>Image Analysis</h2><p>${data.image_analysis.Result || data.image_analysis.error}</p>`;
-            if (data.image_url) {
-                imageResult.innerHTML += `<img src="${data.image_url}" alt="Processed Image">`;
-            }
+            imageResult.className = "result-item border-l-4 border-blue-500 p-4";
+            imageResult.innerHTML = `
+                <h3 class="text-blue-600 font-semibold">Image Analysis</h3>
+                <p>${data.image_analysis.Result || data.image_analysis.error}</p>
+                ${data.image_url ? `<img src="${data.image_url}" alt="Processed Image" class="mt-2">` : ""}
+            `;
             resultsContainer.appendChild(imageResult);
         }
 
         if (data.text_analysis) {
             const textResult = document.createElement("div");
-            textResult.className = "result-item";
-            textResult.innerHTML = `<h2>Text Analysis</h2>`;
-            for (const [key, value] of Object.entries(data.text_analysis)) {
-                textResult.innerHTML += `<p><strong>${key}:</strong> ${value}</p>`;
-            }
+            textResult.className = "result-item border-l-4 border-green-500 p-4";
+            textResult.innerHTML = `
+                <h3 class="text-green-600 font-semibold">Text Analysis</h3>
+                ${Object.entries(data.text_analysis)
+                    .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+                    .join("")}
+            `;
             resultsContainer.appendChild(textResult);
         }
     }

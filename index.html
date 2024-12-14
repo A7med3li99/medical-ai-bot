@@ -5,44 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Chatbot Platform</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1 class="title">Medical Chatbot Platform</h1>
-            <nav class="language-switch">
+    <div class="container mx-auto p-5">
+        <header class="text-center mb-5">
+            <h1 class="title text-4xl font-bold text-blue-600">
+                <span id="i18n-welcome">Welcome to Medical AI Platform</span>
+            </h1>
+            <div class="language-switch mt-3">
                 <button class="lang-btn" onclick="changeLanguage('en')">English</button>
                 <button class="lang-btn" onclick="changeLanguage('ar')">العربية</button>
-            </nav>
+            </div>
         </header>
-        
 
         <main>
-            <form id="analysis-form" action="/" method="POST" enctype="multipart/form-data">
+            <form id="analysis-form" action="/" method="POST" enctype="multipart/form-data" class="space-y-4">
                 <div class="form-group">
-                    <label for="image">Upload Medical Image:</label>
-                    <input type="file" id="image" name="image" accept="image/*">
+                    <label for="image" class="block font-semibold">
+                        <span id="i18n-upload-image">Upload Medical Image:</span>
+                    </label>
+                    <input type="file" id="image" name="image" accept="image/*" class="border border-gray-300 rounded p-2">
                 </div>
 
                 <div class="form-group">
-                    <label for="text">Enter Medical Text:</label>
-                    <textarea id="text" name="text" rows="4" placeholder="Describe symptoms or medical history..."></textarea>
+                    <label for="text" class="block font-semibold">
+                        <span id="i18n-enter-text">Enter Medical Text:</span>
+                    </label>
+                    <textarea id="text" name="text" rows="4" placeholder="Describe symptoms or medical history..."
+                        class="border border-gray-300 rounded p-2 w-full"></textarea>
                 </div>
 
-                <button type="submit" class="submit-btn">Analyze</button>
+                <button type="submit" class="submit-btn bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700">
+                    <span id="i18n-analyze">Analyze</span>
+                </button>
             </form>
 
-            <section id="results">
-                <h2>Results</h2>
+            <div id="spinner" class="hidden mt-5 text-center">
+                <p id="i18n-processing">Processing...</p>
+            </div>
+
+            <section id="results" class="mt-8">
+                <h2 class="text-xl font-bold">
+                    <span id="i18n-results">Results</span>
+                </h2>
                 <div class="result-container"></div>
             </section>
         </main>
 
-        <footer>
+        <footer class="text-center mt-5 text-gray-600">
             <p>&copy; 2024 Medical Chatbot Platform. All Rights Reserved.</p>
         </footer>
     </div>
 
-    <script type="module" src="App.js"></script>
+    <script type="module" src="api.js"></script>
+    <script type="module" src="i18n.js"></script>
 </body>
 </html>

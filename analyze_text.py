@@ -1,20 +1,38 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import sys
+import torch
 
-def analyze_text(question, speciality):
-    model_name = "emilyalsentzer/Bio_ClinicalBERT" if speciality == "general" else "microsoft/BioGPT"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSequenceClassification.from_pretrained(model_name)
+# تحميل النموذج المناسب
+MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
 
-    inputs = tokenizer(question, return_tensors="pt")
-    outputs = model(**inputs)
-    probabilities = outputs.logits.softmax(dim=-1)
-    prediction = probabilities.argmax().item()
+def analyze_text(question):
+    """
+    تحليل النصوص باستخدام Bio_ClinicalBERT.
+    Args:
+        question (str): النص الطبي المراد تحليله.
+    Returns:
+        dict: التوقعات، الاحتمالات، والكلمات المفتاحية.
+    """
+    try:
+        inputs = tokenizer(question, return_tensors="pt", truncation=True, padding=True)
+        outputs = model(**inputs)
+        probabilities = torch.softmax(outputs.logits, dim=-1)
+        prediction = torch.argmax(probabilities, dim=-1).item()
+        keywords = question.split()[:5]  # استخراج الكلمات المفتاحية (أبسط مثال)
 
-    return f"Prediction: {prediction}, Probabilities: {probabilities.tolist()}"
+        return {
+            "prediction": prediction,
+            "probabilities": probabilities.tolist(),
+            "keywords": keywords
+        }
+    except Exception as e:
+        return {"error": f"Error analyzing text: {str(e)}"}
 
 if __name__ == "__main__":
-    question = sys.argv[1]
-    speciality = sys.argv[2]
-    result = analyze_text(question, speciality)
-    print(result)
+    import sys
+    question = sys.argv[1] if len(sys.argv) > 1 else None
+    if question:
+        print(analyze_text(question))
+    else:
+        print({"error": "No input text provided"})
