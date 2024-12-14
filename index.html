@@ -3,37 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Analysis Platform</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <script defer src="/static/app.js"></script>
+    <title>Medical Chatbot Platform</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Medical Analysis Platform</h1>
-            <div class="language-toggle">
-                <button onclick="changeLanguage('en')">English</button>
-                <button onclick="changeLanguage('ar')">العربية</button>
-            </div>
+            <h1 class="title">Medical Chatbot Platform</h1>
+            <nav class="language-switch">
+                <button class="lang-btn" onclick="changeLanguage('en')">English</button>
+                <button class="lang-btn" onclick="changeLanguage('ar')">العربية</button>
+            </nav>
         </header>
 
-        <form action="/" method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="image">Upload Medical Image:</label><br>
-                <input type="file" id="image" name="image" accept="image/*"><br><br>
-            </div>
+        <main>
+            <form id="analysis-form" action="/" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="image">Upload Medical Image:</label>
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
 
-            <div class="form-group">
-                <label for="text">Enter Medical Text:</label><br>
-                <textarea id="text" name="text" rows="4" cols="50" placeholder="Enter medical text here..."></textarea><br><br>
-            </div>
+                <div class="form-group">
+                    <label for="text">Enter Medical Text:</label>
+                    <textarea id="text" name="text" rows="4" placeholder="Describe symptoms or medical history..."></textarea>
+                </div>
 
-            <button type="submit">Analyze</button>
-        </form>
+                <button type="submit" class="submit-btn">Analyze</button>
+            </form>
 
-        <div id="results">
-            <!-- Dynamic results will be injected here -->
-        </div>
+            <section id="results">
+                <h2>Results</h2>
+                <div class="result-container"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Medical Chatbot Platform. All Rights Reserved.</p>
+        </footer>
     </div>
+
+    <script src="App.js"></script>
 </body>
 </html>
