@@ -1,58 +1,104 @@
-import React, { useState } from 'react';
-import io from 'socket.io-client';
+import React, { useEffect, useState } from 'react';
+import './i18n';
+import { useTranslation } from 'react-i18next';
 
-const socket = io('http://localhost:4001');
+const App = () => {
+  const { t, i18n } = useTranslation();
 
-function App() {
-    const [question, setQuestion] = useState('');
-    const [answer, setAnswer] = useState('');
-    const [realTimeMessages, setRealTimeMessages] = useState([]);
+  // State to store results dynamically
+  const [results, setResults] = useState({ imageAnalysis: null, textAnalysis: null });
 
-    const askAI = async () => {
-        try {
-            const response = await fetch('http://localhost:4001/ask-ai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question })
-            });
-            const data = await response.json();
-            setAnswer(data.answer);
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    };
+  // Function to change language
+  const changeLanguage = (lang) => {
+    i18n.changeLanguage(lang);
+  };
 
-    // Real-time communication with Socket.IO
-    socket.on('real-time-message', (message) => {
-        setRealTimeMessages((prevMessages) => [...prevMessages, message]);
+  useEffect(() => {
+    const form = document.querySelector("form");
+    const imageInput = document.querySelector("input[type='file']");
+    const textInput = document.querySelector("textarea");
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const formData = new FormData();
+      if (imageInput.files.length > 0) {
+        formData.append("image", imageInput.files[0]);
+      }
+      if (textInput.value.trim()) {
+        formData.append("text", textInput.value);
+      }
+
+      fetch("/", {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          // Update results state with fetched data
+          setResults({
+            imageAnalysis: data.image_analysis,
+            textAnalysis: data.text_analysis,
+          });
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
     });
+  }, []);
 
-    return (
-        <div>
-            <h1>Medical Assistant for Doctors</h1>
-            <textarea
-                placeholder="Ask a medical question..."
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-            ></textarea>
-            <button onClick={askAI}>Ask</button>
-            {answer && (
-                <div>
-                    <h2>Answer:</h2>
-                    <p>{answer}</p>
-                </div>
-            )}
+  return (
+    <div className="app">
+      <header>
+        <h1>{t('welcome')}</h1>
+        <nav>
+          <button onClick={() => changeLanguage('en')}>English</button>
+          <button onClick={() => changeLanguage('ar')}>العربية</button>
+        </nav>
+      </header>
 
-            <div>
-                <h2>Real-Time Messages:</h2>
-                <ul>
-                    {realTimeMessages.map((msg, index) => (
-                        <li key={index}>{msg}</li>
-                    ))}
-                </ul>
+      <main>
+        <form>
+          <label>{t('uploadImage')}:
+            <input type="file" accept="image/*" />
+          </label>
+          <br />
+          <label>{t('enterText')}:
+            <textarea placeholder={t('typeHere')} rows="4"></textarea>
+          </label>
+          <br />
+          <button type="submit">{t('submit')}</button>
+        </form>
+
+        <div className="results">
+          {/* Display image analysis results dynamically */}
+          {results.imageAnalysis && (
+            <div className="result-item">
+              <h2>{t('imageAnalysis')}</h2>
+              <p>{results.imageAnalysis.Result || results.imageAnalysis.error}</p>
+              {results.imageAnalysis.image_url && (
+                <img src={results.imageAnalysis.image_url} alt="Processed Image" />
+              )}
             </div>
+          )}
+
+          {/* Display text analysis results dynamically */}
+          {results.textAnalysis && (
+            <div className="result-item">
+              <h2>{t('textAnalysis')}</h2>
+              {Object.entries(results.textAnalysis).map(([key, value]) => (
+                <p key={key}><strong>{key}:</strong> {value}</p>
+              ))}
+            </div>
+          )}
         </div>
-    );
-}
+      </main>
+
+      <footer>
+        <p>{t('footer')}</p>
+      </footer>
+    </div>
+  );
+};
 
 export default App;

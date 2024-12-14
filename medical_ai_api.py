@@ -1,106 +1,100 @@
-from flask import Flask, request, jsonify
-from transformers import pipeline, AutoModelForImageClassification, AutoFeatureExtractor
-from sentence_transformers import SentenceTransformer, util
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from monai.transforms import Compose, RandGaussianNoise, RandAffine, ScaleIntensity, EnsureChannelFirst
+from monai.data import create_test_image_3d
 from PIL import Image
-import torch
 
-app = Flask(__name__)
+def generate_synthetic_image():
+    """
+    Generate a synthetic medical image using MONAI.
+    Returns:
+        np.ndarray: Generated 3D medical image.
+    """
+    try:
+        # Generate a 3D test image with random objects
+        image, _ = create_test_image_3d(128, 128, 128, num_objs=5, rad_max=20)
 
-# إعداد النماذج
-translator = pipeline("translation", model="Helsinki-NLP/opus-mt-en-ar")
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-sentiment_model = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
-qa_model = pipeline("question-answering", model="deepset/roberta-base-squad2")
-similarity_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-text_generation_model = pipeline("text-generation", model="microsoft/BioGPT")
-image_model_name = "google/vit-base-patch16-224"
-image_feature_extractor = AutoFeatureExtractor.from_pretrained(image_model_name)
-image_model = AutoModelForImageClassification.from_pretrained(image_model_name)
+        # Apply transformations to enhance realism
+        transforms = Compose([
+            EnsureChannelFirst(),  # Ensure the channel dimension is first
+            RandGaussianNoise(prob=1.0, mean=0.0, std=0.1),
+            RandAffine(prob=1.0, translate_range=(5, 5, 5), rotate_range=(0.1, 0.1, 0.1), padding_mode='zeros'),
+            ScaleIntensity()
+        ])
+        transformed_image = transforms(image)
 
-# 1. الترجمة
-@app.route('/translate', methods=['POST'])
-def translate():
-    data = request.json
-    text = data.get('text', '')
-    if not text:
-        return jsonify({'error': 'Text is required'}), 400
+        # Display a 2D slice of the 3D image
+        plt.imshow(transformed_image[0, 64, :, :], cmap="gray")
+        plt.title("Synthetic Medical Image Slice")
+        plt.show()
 
-    translation = translator(text, max_length=500)
-    return jsonify({'translation': translation[0]['translation_text']})
+        return transformed_image
+    except Exception as e:
+        raise RuntimeError(f"Error generating synthetic image: {e}")
 
-# 2. التلخيص
-@app.route('/summarize', methods=['POST'])
-def summarize():
-    data = request.json
-    text = data.get('text', '')
-    if not text:
-        return jsonify({'error': 'Text is required'}), 400
+def analyze_image(image_path):
+    """
+    Analyze a medical image (JPEG, PNG, or synthetic) using a mock model.
+    Args:
+        image_path (str): Path to the uploaded medical image or None for synthetic.
+    Returns:
+        dict: Predicted probabilities for each condition or error message.
+    """
+    # Mock prediction function
+    def mock_model_predict(img):
+        # Return mock probabilities for demonstration purposes
+        return np.array([[0.1, 0.2, 0.3, 0.1, 0.2, 0.1]])
 
-    summary = summarizer(text, max_length=130, min_length=30, do_sample=False)
-    return jsonify({'summary': summary[0]['summary_text']})
+    try:
+        if image_path:
+            # Process real images (JPEG/PNG/DICOM)
+            if image_path.lower().endswith(".dcm"):
+                import pydicom
+                dicom_image = pydicom.dcmread(image_path)
+                img = dicom_image.pixel_array
+                if len(img.shape) == 2:
+                    img = np.expand_dims(img, axis=0)  # Add channel
+                img = np.stack((img,) * 3, axis=-1)  # Convert grayscale to RGB
+            else:
+                with Image.open(image_path) as img:
+                    img = img.resize((224, 224))
+            img = np.array(img, dtype="float32") / 255.0
+            img = np.expand_dims(img, axis=0)
+        else:
+            # Generate synthetic image if no path is provided
+            img = generate_synthetic_image()
+            img = np.expand_dims(img[0, 64, :, :], axis=0)  # Use a 2D slice with channel
+    except Exception as e:
+        return {"error": f"Failed to process the image: {e}"}
 
-# 3. تحليل المشاعر
-@app.route('/sentiment', methods=['POST'])
-def sentiment():
-    data = request.json
-    text = data.get('text', '')
-    if not text:
-        return jsonify({'error': 'Text is required'}), 400
+    # Predict using the mock model
+    try:
+        predictions = mock_model_predict(img)
+    except Exception as e:
+        return {"error": f"Failed to make a prediction: {e}"}
 
-    sentiments = sentiment_model(text)
-    return jsonify({'sentiments': sentiments})
+    # Define labels for the output classes
+    labels = [
+        "No Finding", "Pneumonia", "Effusion", "Atelectasis", "Cardiomegaly", "Edema"
+    ]
 
-# 4. الإجابة على الأسئلة
-@app.route('/qa', methods=['POST'])
-def question_answering():
-    data = request.json
-    question = data.get('question', '')
-    context = data.get('context', '')
-    if not question or not context:
-        return jsonify({'error': 'Question and context are required'}), 400
+    # Create a result dictionary
+    result = {label: float(pred) for label, pred in zip(labels, predictions[0])}
+    return result
 
-    answer = qa_model(question=question, context=context)
-    return jsonify({'answer': answer['answer']})
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1:
+        image_path = sys.argv[1]
+        if not os.path.exists(image_path):
+            print(f"Error: The file '{image_path}' does not exist.")
+            sys.exit(1)
+    else:
+        image_path = None  # Use synthetic image if no path provided
 
-# 5. تشابه النصوص
-@app.route('/similarity', methods=['POST'])
-def similarity():
-    data = request.json
-    text1 = data.get('text1', '')
-    text2 = data.get('text2', '')
-    if not text1 or not text2:
-        return jsonify({'error': 'Two texts are required'}), 400
-
-    embeddings1 = similarity_model.encode(text1, convert_to_tensor=True)
-    embeddings2 = similarity_model.encode(text2, convert_to_tensor=True)
-    similarity = util.pytorch_cos_sim(embeddings1, embeddings2)
-    return jsonify({'similarity': similarity.item()})
-
-# 6. توليد النصوص الطبية
-@app.route('/generate', methods=['POST'])
-def generate():
-    data = request.json
-    prompt = data.get('prompt', '')
-    if not prompt:
-        return jsonify({'error': 'Prompt is required'}), 400
-
-    generated = text_generation_model(prompt, max_length=200, num_return_sequences=1)
-    return jsonify({'generated_text': generated[0]['generated_text']})
-
-# 7. تحليل الصور
-@app.route('/analyze-image', methods=['POST'])
-def analyze_image():
-    if 'image' not in request.files:
-        return jsonify({'error': 'Image file is required'}), 400
-
-    image_file = request.files['image']
-    image = Image.open(image_file).convert("RGB")
-    inputs = image_feature_extractor(images=image, return_tensors="pt")
-    outputs = image_model(**inputs)
-    logits = outputs.logits
-    predicted_class_idx = torch.argmax(logits, dim=-1).item()
-    return jsonify({'predicted_class': image_model.config.id2label[predicted_class_idx]})
-
-# تشغيل التطبيق
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    try:
+        analysis = analyze_image(image_path)
+        print(analysis)
+    except RuntimeError as e:
+        print({"error": str(e)})

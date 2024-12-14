@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Analysis Platform</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script defer src="/static/app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Medical Analysis Platform</h1>
+            <div class="language-toggle">
+                <button onclick="changeLanguage('en')">English</button>
+                <button onclick="changeLanguage('ar')">العربية</button>
+            </div>
+        </header>
+
+        <form action="/" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="image">Upload Medical Image:</label><br>
+                <input type="file" id="image" name="image" accept="image/*"><br><br>
+            </div>
+
+            <div class="form-group">
+                <label for="text">Enter Medical Text:</label><br>
+                <textarea id="text" name="text" rows="4" cols="50" placeholder="Enter medical text here..."></textarea><br><br>
+            </div>
+
+            <button type="submit">Analyze</button>
+        </form>
+
+        <div id="results">
+            <!-- Dynamic results will be injected here -->
+        </div>
+    </div>
+</body>
+</html>

@@ -1,63 +1,53 @@
 body {
-    background-color: #f8f9fa;
-    color: #212529;
-    transition: background-color 0.3s, color 0.3s;
-    font-family: 'Roboto', sans-serif;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
 }
 
-body.dark {
-    background-color: #343a40;
-    color: #f8f9fa;
-}
-
-.login-form {
-    max-width: 400px;
-    margin: 50px auto;
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    background: #ffffff;
     padding: 20px;
-    border: 1px solid #dee2e6;
-    border-radius: 10px;
-    background-color: #ffffff;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.login-form input {
-    width: 100%;
-    margin: 10px 0;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    font-size: 1rem;
+h1 {
+    text-align: center;
+    color: #333333;
 }
 
-.login-form button {
-    width: 100%;
-    padding: 10px;
-    background-color: #007bff;
-    color: #ffffff;
+.language-toggle {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.language-toggle button {
+    margin: 0 5px;
+    padding: 10px 15px;
     border: none;
+    background: #007bff;
+    color: #ffffff;
     border-radius: 5px;
-    font-size: 1.1rem;
     cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-.login-form button:hover {
-    background-color: #0056b3;
+.language-toggle button:hover {
+    background: #0056b3;
 }
 
-.alert {
+.result-item {
+    margin-top: 20px;
     padding: 10px;
-    margin: 20px 0;
-    border-radius: 5px;
-    font-size: 0.9rem;
+    background: #f9f9f9;
+    border-left: 4px solid #007bff;
+    border-radius: 4px;
 }
 
-.alert-success {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
+img {
+    max-width: 100%;
+    border-radius: 4px;
+    margin-top: 10px;
 }
